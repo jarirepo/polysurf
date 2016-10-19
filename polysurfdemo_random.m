@@ -56,7 +56,7 @@ P{4} = G1v; % G(1,v)
 % P{1},P{2},P{3},P{4}
 
 % Generate the bilinear surface G(u,v)
-[Gx,Gy,Gz] = polysurf(P,surfu,surfv);
+[Gx,Gy,Gz] = polysurf(P,surfu,surfv,1);
 
 % 3-d plot    
 fh3d = figure('name','3-d plot');
