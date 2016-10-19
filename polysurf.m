@@ -1,7 +1,7 @@
-function [Gx,Gy,Gz] = polysurf(P,surfu,surfv)
+function [Gx,Gy,Gz] = polysurf(P, surfu, surfv, matchBoundaries)
 %POLYSURF Bilinear interpolation between 4 polylines
 % 
-% USAGE: [Gx,Gy,Gz] = polysurf(P,surfu,surfv)
+% USAGE: [Gx,Gy,Gz] = polysurf(P, surfu, surfv, [matchBoundaries=0])
 % 
 % INPUTS
 % P         -- a 4-element cell array containing the definition points of
@@ -18,17 +18,31 @@ function [Gx,Gy,Gz] = polysurf(P,surfu,surfv)
 % surfu     -- number of surface segments in the U-direction (16)
 % surfv     -- number of surface segments in the V-direction (16)
 % 
+% matchBoundaries -- set to 1 to include the polyline control points in the
+%                    generated surface. The number of segments in the u- 
+%                    and v-directions may then become larger than specified 
+%                    by surfu and surfv. On the other hand, the resolution
+%                    will also be slightly improved near the definition
+%                    points. Default is matchBoundaries=0
+% 
 % OUTPUTS
-% Gx,Gy,Gz  -- matrices of size (surfu x surfv) containing the X,Y and Z
-%              values of the generated surface
+% Gx,Gy,Gz  -- matrices containing the X-,Y- and Z-values of the generated 
+%              surface. These can be used as input to the built-in SURF()
+%              function.
 
 % Date   : 10/2016
 % Author : Jari Repo, University West, jari.repo@hv.se
+% 
+% Modified 2016-10-19, JRE
+% The boundary definition points can be included in the surface
+% interpolation by setting matchBoundaries=1
 
 if ~exist('surfu'),surfu = 16;end
 if ~exist('surfv'),surfv = 16;end
+if ~exist('matchBoundaries'),matchBoundaries = 0; end
 if length(P)~=4,error('P must contain 4 polylines'),end
 
+% Init outputs
 Gx = []; Gy = []; Gz = [];
 
 % Generated the u- and v-grids; 0<=(u,v)<=1
@@ -42,6 +56,33 @@ for k=1:4
     S(k).p = P{k};
     S(k).t = parametrize( P{k} );    
 end
+    
+if matchBoundaries
+    % Inject the polyline parameters 0<t<1 into the u- and v-grid to
+    % include the polyline definition points in the final surface.
+    tol = 1e-6;
+    for i=2:length(S(1).t)-1
+        if ~any(abs(u-S(1).t(i)) < tol)
+            u = [u, S(1).t(i)];
+    end
+    for i=2:length(S(2).t)-1
+        if ~any(abs(u-S(2).t(i)) < tol)
+            u = [u, S(2).t(i)];
+        end
+    end
+    for i=2:length(S(3).t)-1
+        if ~any(abs(v-S(3).t(i)) < tol)
+            v = [v, S(3).t(i)];
+        end
+    end
+    for i=2:length(S(4).t)-1
+        if ~any(abs(v-S(4).t(i)) < tol)
+            v = [v, S(4).t(i)];
+        end
+    end
+    u = sort(u,'ascend');
+    v = sort(v,'ascend');
+end
 
 % Map the parameter values (u,v) to boundary curve segment numbers to speed
 % up later curve interpolation.
@@ -50,13 +91,12 @@ end
 [S(3).idx, S(3).h] = mapParam(S(3).t, v);
 [S(4).idx, S(4).h] = mapParam(S(4).t, v);
 
-% S(1),S(2),S(3),S(4)
+% Generate the bilinear surface
 [Gx,Gy,Gz] = generateSurface(S,u,v);
-end % /polysurf
-
+end
 
 % --- Helper functions ---
-function [ t ] = parametrize(p)
+function [t] = parametrize(p)
     t = [0,cumsum(sqrt(sum((p(:,2:end)-p(:,1:end-1)).^2)))];
     t = t/t(end);
 end

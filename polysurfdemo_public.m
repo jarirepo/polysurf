@@ -145,7 +145,7 @@ surfu = 50;
 surfv = 50;
 
 disp('Generating surface ...')
-[Gx,Gy,Gz] = polysurf(P,surfu,surfv);
+[Gx,Gy,Gz] = polysurf(P,surfu,surfv,1);
 
 hold on
 % plot3(Gx,Gy,Gz,'.')
