@@ -64,6 +64,7 @@ if matchBoundaries
     for i=2:length(S(1).t)-1
         if ~any(abs(u-S(1).t(i)) < tol)
             u = [u, S(1).t(i)];
+        end
     end
     for i=2:length(S(2).t)-1
         if ~any(abs(u-S(2).t(i)) < tol)
