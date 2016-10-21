@@ -1,7 +1,7 @@
-function [Gx,Gy,Gz] = polysurf(P, surfu, surfv, matchBoundaries)
+function [Gx,Gy,Gz] = polysurf(P, surfu, surfv, tighten)
 %POLYSURF Bilinear interpolation between 4 polylines
 % 
-% USAGE: [Gx,Gy,Gz] = polysurf(P, surfu, surfv, [matchBoundaries=0])
+% USAGE: [Gx,Gy,Gz] = polysurf(P [,surfu=16, surfv=16, tighten=0])
 % 
 % INPUTS
 % P         -- a 4-element cell array containing the definition points of
@@ -18,12 +18,12 @@ function [Gx,Gy,Gz] = polysurf(P, surfu, surfv, matchBoundaries)
 % surfu     -- number of surface segments in the U-direction (16)
 % surfv     -- number of surface segments in the V-direction (16)
 % 
-% matchBoundaries -- set to 1 to include the polyline control points in the
-%                    generated surface. The number of segments in the u- 
-%                    and v-directions may then become larger than specified 
-%                    by surfu and surfv. On the other hand, the resolution
-%                    will also be slightly improved near the definition
-%                    points. Default is matchBoundaries=0
+% tighten   -- set to 1 to include the polyline control points in the
+%              generated surface. The number of segments in the u- 
+%              and v-directions may then become larger than specified 
+%              by surfu and surfv. On the other hand, the resolution
+%              will also be slightly improved near the definition
+%              points. Default is tighten=0
 % 
 % OUTPUTS
 % Gx,Gy,Gz  -- matrices containing the X-,Y- and Z-values of the generated 
@@ -35,11 +35,11 @@ function [Gx,Gy,Gz] = polysurf(P, surfu, surfv, matchBoundaries)
 % 
 % Modified 2016-10-19, JRE
 % The boundary definition points can be included in the surface
-% interpolation by setting matchBoundaries=1
+% interpolation by setting tighten=1
 
 if ~exist('surfu'),surfu = 16;end
 if ~exist('surfv'),surfv = 16;end
-if ~exist('matchBoundaries'),matchBoundaries = 0; end
+if ~exist('tighten'),tighten = 0; end
 if length(P)~=4,error('P must contain 4 polylines'),end
 
 % Init outputs
@@ -57,32 +57,45 @@ for k=1:4
     S(k).t = parametrize( P{k} );    
 end
     
-if matchBoundaries
+if tighten
     % Inject the polyline parameters 0<t<1 into the u- and v-grid to
     % include the polyline definition points in the final surface.
-    tol = 1e-6;
+%     tol = 1e-12;
     for i=2:length(S(1).t)-1
-        if ~any(abs(u-S(1).t(i)) < tol)
+%         if ~any(abs(u-S(1).t(i)) < tol)
+        if ~any(u==S(1).t(i))
             u = [u, S(1).t(i)];
         end
     end
     for i=2:length(S(2).t)-1
-        if ~any(abs(u-S(2).t(i)) < tol)
+%         if ~any(abs(u-S(2).t(i)) < tol)
+        if ~any(u==S(2).t(i))
             u = [u, S(2).t(i)];
         end
     end
     for i=2:length(S(3).t)-1
-        if ~any(abs(v-S(3).t(i)) < tol)
+%         if ~any(abs(v-S(3).t(i)) < tol)
+        if ~any(v==S(3).t(i))
             v = [v, S(3).t(i)];
         end
     end
     for i=2:length(S(4).t)-1
-        if ~any(abs(v-S(4).t(i)) < tol)
+%         if ~any(abs(v-S(4).t(i)) < tol)
+        if ~any(v==S(4).t(i))
             v = [v, S(4).t(i)];
         end
     end
+    
+%     disp(['u: ' num2str(u)])
+%     disp(['v: ' num2str(v)])
+    
     u = sort(u,'ascend');
     v = sort(v,'ascend');
+    
+%     disp('Sorted parameters:')
+%     disp(['u: ' num2str(u)])
+%     disp(['v: ' num2str(v)])
+%     disp([length(u),length(v)])
 end
 
 % Map the parameter values (u,v) to boundary curve segment numbers to speed
